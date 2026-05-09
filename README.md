@@ -141,6 +141,46 @@ sudo apt install build-essential cmake pkg-config git \
    > **Tip**: Use `cmake .. -DCMAKE_BUILD_TYPE=Release` if you only need the final executable in optimized (Release) mode.
 
 
+## Command-Line Interface (CLI)
+
+Mesh2Splat can run in headless mode for batch/scripted conversions without opening a GUI window.
+
+```bash
+# Basic usage
+Mesh2Splat --cli -i model.glb -o output.ply
+
+# With options
+Mesh2Splat --cli -i model.glb -o output.ply -r 2048 -f 1
+```
+
+### CLI Options
+
+| Option | Description |
+|--------|-------------|
+| `--cli` | Enable command-line mode (no GUI) |
+| `-i`, `--input <file>` | Input `.glb` mesh file **(required)** |
+| `-o`, `--output <file>` | Output `.ply` file **(required)** |
+| `-r`, `--resolution <N>` | Conversion resolution (default: `1024`) |
+| `-f`, `--format <N>` | Export format (default: `0`):<br>`0` = Standard 3DGS PLY<br>`1` = PBR PLY<br>`2` = Compressed PBR PLY |
+| `--help` | Show usage help |
+
+### Examples
+
+```bash
+# Quick conversion at default resolution (1024)
+Mesh2Splat --cli -i helmet.glb -o helmet.ply
+
+# High-quality conversion with PBR export
+Mesh2Splat --cli -i scene.glb -o scene.ply -r 4096 -f 1
+
+# Batch convert via script
+for f in *.glb; do
+  Mesh2Splat --cli -i "$f" -o "${f%.glb}.ply"
+done
+```
+
+> **Note**: CLI mode requires the same OpenGL 4.5+ GPU as the GUI mode. A hidden window is created to obtain the GPU context; no display output is produced.
+
 ## Limitations
 - Volumetric Data such as foliage, grass, hair, clouds, etc. has not being targeted and will probably not be converted correctly if using primitives different from triangles.<br>
 
