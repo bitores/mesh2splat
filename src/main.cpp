@@ -82,13 +82,30 @@ static int runCli(const std::string& inputFile, const std::string& outputFile,
     renderer.enableRenderPass(conversionPassName);
     renderer.renderFrame();
 
-    // Export
+    // Export — read GPU data back synchronously, then save on the main thread.
+    // NOTE: we do NOT use SceneManager::exportPly() here because it spawns a
+    // detached thread that may not finish before the process exits.
     std::cout << "[Mesh2Splat] Exporting: " << outputFile << "\n";
-    renderer.getSceneManager().exportPly(outputFile, format);
 
-    // The export runs in a detached thread; give it a moment to start
-    // before tearing down the OpenGL context.
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    {
+        RenderContext* ctx = renderer.getRenderContext();
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ctx->gaussianBuffer);
+
+        std::vector<utils::GaussianDataSSBO> cpuData(ctx->numberOfGaussians);
+
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+
+        glGetBufferSubData(
+            GL_SHADER_STORAGE_BUFFER, 0,
+            ctx->numberOfGaussians * sizeof(utils::GaussianDataSSBO),
+            cpuData.data()
+        );
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        float scaleMultiplier =
+            ctx->gaussianStd / static_cast<float>(ctx->resolutionTarget);
+        parsers::savePlyVector(outputFile, cpuData, format, scaleMultiplier);
+    }
 
     glfwTerminate();
     std::cout << "[Mesh2Splat] Done.\n";
