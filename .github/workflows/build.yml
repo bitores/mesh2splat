@@ -1,0 +1,53 @@
+name: CI Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build (Release)
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mesh2Splat-windows-x64
+          path: bin/Release/Mesh2Splat.exe
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libglfw3-dev \
+            libglew-dev \
+            libgl1-mesa-dev \
+            xorg-dev
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build (Release)
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Mesh2Splat-linux-x64
+          path: bin/Release/Mesh2Splat
+          if-no-files-found: error

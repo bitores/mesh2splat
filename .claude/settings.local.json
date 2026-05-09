@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" log --oneline -5)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" branch -a)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" remote -v)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" describe --tags --always)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" submodule status)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" status)",
+      "Bash(git -C \"d:/hzj-ws/mesh2splat-1\" rev-parse HEAD)",
+      "Bash(dir /B \"d:\\\\hzj-ws\\\\mesh2splat-1\\\\thirdParty\")"
+    ]
+  }
+}

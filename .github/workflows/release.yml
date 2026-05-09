@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact-name: Mesh2Splat-windows-x64
+            binary-path: bin/Release/Mesh2Splat.exe
+
+          - os: ubuntu-latest
+            artifact-name: Mesh2Splat-linux-x64
+            binary-path: bin/Release/Mesh2Splat
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libglfw3-dev \
+            libglew-dev \
+            libgl1-mesa-dev \
+            xorg-dev
+
+      - name: Configure CMake
+        run: cmake -B build
+
+      - name: Build (Release)
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: ${{ matrix.binary-path }}
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          RELEASE_NOTES="Mesh2Splat $TAG_NAME
+
+          ### Downloads
+          - [Mesh2Splat-windows-x64](artifacts/Mesh2Splat-windows-x64/Mesh2Splat.exe)
+          - [Mesh2Splat-linux-x64](artifacts/Mesh2Splat-linux-x64/Mesh2Splat)"
+
+          # Create the release with binaries attached
+          gh release create "$TAG_NAME" \
+            --title "Mesh2Splat $TAG_NAME" \
+            --notes "See the [README](README.md) for build and usage instructions.
+
+          Automated release build from \`$TAG_NAME\`." \
+            artifacts/Mesh2Splat-windows-x64/Mesh2Splat.exe \
+            artifacts/Mesh2Splat-linux-x64/Mesh2Splat
