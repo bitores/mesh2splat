@@ -33,10 +33,10 @@ jobs:
             xorg-dev
 
       - name: Configure CMake
-        run: cmake -B build
+        run: cmake -B build ${{ runner.os == 'Linux' && '-DCMAKE_BUILD_TYPE=Release' || '' }}
 
-      - name: Build (Release)
-        run: cmake --build build --config Release
+      - name: Build
+        run: cmake --build build ${{ runner.os == 'Windows' && '--config Release' || '' }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
