@@ -77,7 +77,7 @@ namespace glUtils
     //Add new shader location here
     void initializeShaderLocations() {
 
-        fs::path shadersBase = fs::path(__FILE__).parent_path() / "../shaders"; //Todo: rather move the shader files relative to the exe loc
+        fs::path shadersBase = fs::path(utils::getExecutableDir()) / "shaders";
     
         shaderLocations.converterVertexShaderLocation                   = (shadersBase / "conversion" / "converterVS.glsl").string();
         shaderLocations.converterGeomShaderLocation                     = (shadersBase / "conversion" / "converterGS.glsl").string();
