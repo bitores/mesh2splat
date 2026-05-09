@@ -74,6 +74,7 @@ static int runCli(const std::string& inputFile, const std::string& outputFile,
 
     // Configure conversion
     renderer.resetModelMatrices();
+    renderer.setStdDevFromImGui(0.65f);  // default gaussian size
     renderer.gaussianBufferFromSize(static_cast<unsigned int>(resolution * resolution));
     renderer.setViewportResolutionForConversion(resolution);
     renderer.setFormatType(format);
@@ -82,22 +83,40 @@ static int runCli(const std::string& inputFile, const std::string& outputFile,
     renderer.enableRenderPass(conversionPassName);
     renderer.renderFrame();
 
+    // Check result
+    RenderContext* ctx = renderer.getRenderContext();
+    std::cout << "[Mesh2Splat] Gaussians generated: " << ctx->numberOfGaussians << "\n";
+
+    if (ctx->numberOfGaussians == 0) {
+        std::cerr << "[Mesh2Splat] ERROR: No gaussians were generated.\n"
+                  << "         Check that shaders/ directory exists next to the executable\n"
+                  << "         and that your GPU supports OpenGL 4.5.\n";
+        glfwTerminate();
+        return 1;
+    }
+
     // Export — read GPU data back synchronously, then save on the main thread.
     // NOTE: we do NOT use SceneManager::exportPly() here because it spawns a
     // detached thread that may not finish before the process exits.
     std::cout << "[Mesh2Splat] Exporting: " << outputFile << "\n";
 
     {
-        RenderContext* ctx = renderer.getRenderContext();
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, ctx->gaussianBuffer);
 
-        std::vector<utils::GaussianDataSSBO> cpuData(ctx->numberOfGaussians);
+        // Allocate enough room even if numberOfGaussians changes between this read
+        GLint bufferSize = 0;
+        glGetBufferParameteriv(GL_SHADER_STORAGE_BUFFER, GL_BUFFER_SIZE, &bufferSize);
+        int gaussianCount = bufferSize / static_cast<int>(sizeof(utils::GaussianDataSSBO));
+        if (gaussianCount > ctx->numberOfGaussians)
+            gaussianCount = ctx->numberOfGaussians;
+
+        std::vector<utils::GaussianDataSSBO> cpuData(gaussianCount);
 
         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
         glGetBufferSubData(
             GL_SHADER_STORAGE_BUFFER, 0,
-            ctx->numberOfGaussians * sizeof(utils::GaussianDataSSBO),
+            gaussianCount * sizeof(utils::GaussianDataSSBO),
             cpuData.data()
         );
         glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
